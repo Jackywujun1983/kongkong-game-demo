@@ -11,7 +11,7 @@ from typing import Any
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 DATABASE_PATH = PROJECT_DIR / "backend" / "gamehub.sqlite3"
 OUTPUT_PATH = PROJECT_DIR / "frontend" / "public" / "game-data.js"
-DEFAULT_COVER_PATH = "./public/assets/covers/default-game-cover.png"
+DEFAULT_COVER_PATH = "./public/assets/covers/default-game-cover.jpg"
 LEGACY_PLACEHOLDER_PATH = "./public/assets/covers/game-placeholder.png"
 ABSOLUTE_LEGACY_PLACEHOLDER_PATH = "/public/assets/covers/game-placeholder.png"
 

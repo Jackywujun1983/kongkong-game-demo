@@ -4,7 +4,7 @@ import type { SyntheticEvent } from "react";
 
 import type { GameSummary } from "../../types/domain";
 
-const DEFAULT_COVER_URL = "/assets/covers/default-game-cover.png";
+const DEFAULT_COVER_URL = "/assets/covers/default-game-cover.jpg";
 const LEGACY_PLACEHOLDER_URL = "/assets/covers/game-placeholder.png";
 
 interface GameCardProps {
