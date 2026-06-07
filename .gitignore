@@ -1,0 +1,12 @@
+backend/*.sqlite3
+!backend/gamehub.sqlite3
+backend/*.sqlite3-journal
+backend/*.log
+frontend/dist/
+frontend/node_modules/
+*.pyc
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.env

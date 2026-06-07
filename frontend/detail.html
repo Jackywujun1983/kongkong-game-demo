@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>空空如也GameHub 游戏详情</title>
+    <link rel="stylesheet" href="./public/site.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <a class="brand" href="./preview.html">
+          <span class="brand-mark">◆</span>
+          <span>空空如也GameHub</span>
+        </a>
+        <div></div>
+        <nav class="nav-links" aria-label="主导航">
+          <a href="./preview.html">游戏库</a>
+        </nav>
+      </header>
+
+      <section id="detail-root"></section>
+      <section class="related-section" id="related-root"></section>
+    </main>
+
+    <script src="./public/game-data.js"></script>
+    <script>
+      const fallbackData = window.GAMEHUB_DATA;
+      const params = new URLSearchParams(window.location.search);
+      const slug = params.get("slug");
+      const detailRoot = document.getElementById("detail-root");
+      const relatedRoot = document.getElementById("related-root");
+
+      function normalizeGame(game) {
+        const gameCategories = game.categories || [];
+        return {
+          title: game.title,
+          slug: game.slug,
+          category: gameCategories[0]?.slug || game.category_slug,
+          categoryName: gameCategories.length
+            ? gameCategories.map((category) => category.name).join(" / ")
+            : game.category_name || "未分类",
+          categories: gameCategories,
+          studio: game.studio,
+          year: game.release_year,
+          rating: Number(game.rating || 0),
+          cover: game.cover_url || "./public/assets/covers/game-placeholder.png",
+          summary: game.summary,
+          details: game.details,
+          size: extractGameSize(game.summary || game.details),
+          downloadUrl: game.download_url,
+          platforms: game.platforms || [],
+          tags: game.tags || [],
+        };
+      }
+
+      function normalizeFallbackGame(game) {
+        return {
+          ...game,
+          categoryName: game.categoryName,
+          year: game.year,
+          cover: game.cover,
+          size: extractGameSize(game.summary || game.details),
+          downloadUrl: game.downloadUrl,
+        };
+      }
+
+      function extractGameSize(text = "") {
+        const match = String(text).match(/资源大小：([^。，\n]+)/);
+        const size = match ? match[1].trim() : "";
+        return size && size !== "未知" && size !== "未知大小" ? size : "";
+      }
+
+      function escapeHtml(value = "") {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      function renderDownloadAddress(downloadUrl) {
+        const url = String(downloadUrl || "").trim();
+        if (!url) {
+          return `
+            <div class="download-address">
+              <span class="download-address-label">下载地址</span>
+              <span class="muted">暂无下载地址</span>
+            </div>
+          `;
+        }
+
+        const safeUrl = escapeHtml(url);
+        return `
+          <div class="download-address">
+            <span class="download-address-label">下载地址</span>
+            <span class="detail-download-link">${safeUrl}</span>
+          </div>
+        `;
+      }
+
+      async function requestGame() {
+        const response = await fetch(`/api/games/${encodeURIComponent(slug)}`);
+        if (!response.ok) {
+          throw new Error("Game not found");
+        }
+        return normalizeGame(await response.json());
+      }
+
+      function renderNotFound() {
+        detailRoot.innerHTML = `
+          <div class="panel">
+            <h1>未找到游戏</h1>
+            <p class="muted">请返回游戏库重新选择。</p>
+            <a class="button primary" href="./preview.html">返回游戏库</a>
+          </div>
+        `;
+      }
+
+      function renderGame(game) {
+        document.title = `${game.title} - 空空如也GameHub 游戏详情`;
+        const safeDownloadUrl = escapeHtml(game.downloadUrl || "");
+        const safeTitle = escapeHtml(game.title);
+        detailRoot.innerHTML = `
+          <nav class="detail-breadcrumb" aria-label="详情页导航">
+            <a class="detail-back-link" href="./preview.html">
+              <span class="detail-back-icon" aria-hidden="true">&larr;</span>
+              <span>返回游戏库</span>
+            </a>
+            <span class="detail-breadcrumb-separator" aria-hidden="true">/</span>
+            <span class="detail-breadcrumb-current">${safeTitle}</span>
+          </nav>
+          <article class="detail-layout">
+            <div class="detail-cover">
+              <img src="${game.cover}" alt="${game.title} 封面" />
+            </div>
+            <div class="detail-panel detail-copy">
+              <span class="eyebrow">${game.categoryName}</span>
+              <h1>${game.title}</h1>
+              ${renderDownloadAddress(game.downloadUrl)}
+              <div class="detail-stat-grid">
+                <div class="detail-stat"><span>评分</span><strong>★ ${game.rating.toFixed(1)}</strong></div>
+                <div class="detail-stat"><span>发行年份</span><strong>${game.year}</strong></div>
+                <div class="detail-stat"><span>游戏大小</span><strong>${game.size || "未标注"}</strong></div>
+              </div>
+              <p>支持平台：${game.platforms.join(" / ")}</p>
+              <div class="meta-row">
+                ${game.downloadUrl ? `<a class="button primary" href="${safeDownloadUrl}" target="_blank" rel="noreferrer">前往下载</a>` : ""}
+              </div>
+            </div>
+          </article>
+        `;
+      }
+
+      function renderRelated(game) {
+        const relatedGames = fallbackData.games
+          .map(normalizeFallbackGame)
+          .filter((item) => item.category === game.category && item.slug !== game.slug)
+          .slice(0, 3);
+        if (relatedGames.length) {
+          relatedRoot.innerHTML = `
+            <h2>同分类推荐</h2>
+            <div class="related-grid">
+              ${relatedGames
+                .map(
+                  (item) => `
+                    <a class="related-card" href="./detail.html?slug=${encodeURIComponent(item.slug)}">
+                      <img src="${item.cover}" alt="${item.title} 封面" />
+                      <div>
+                        <strong>${item.title}</strong>
+                        <p>${item.summary}</p>
+                      </div>
+                    </a>
+                  `,
+                )
+                .join("")}
+            </div>
+          `;
+        }
+      }
+
+      async function loadDetail() {
+        if (!slug) {
+          renderNotFound();
+          return;
+        }
+
+        try {
+          const game = await requestGame();
+          renderGame(game);
+          renderRelated(game);
+        } catch {
+          const fallbackGame = fallbackData.games
+            .map(normalizeFallbackGame)
+            .find((item) => item.slug === slug);
+          if (!fallbackGame) {
+            renderNotFound();
+            return;
+          }
+          renderGame(fallbackGame);
+          renderRelated(fallbackGame);
+        }
+      }
+
+      loadDetail();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>空空如也GameHub 游戏信息检索</title>
+    <link rel="stylesheet" href="./public/site.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <a class="brand" href="./preview.html">
+          <span class="brand-mark">◆</span>
+          <span>空空如也GameHub</span>
+        </a>
+        <form class="search-panel" id="search-form">
+          <input id="search-input" aria-label="检索游戏" placeholder="搜索游戏、工作室、标签" />
+          <button class="button primary" type="submit">检索</button>
+        </form>
+        <nav class="nav-links" aria-label="主导航">
+          <a class="active" href="./preview.html">游戏库</a>
+        </nav>
+      </header>
+
+      <section class="overview">
+        <article class="hero-panel" id="spotlight"></article>
+        <aside class="stat-strip" id="stats"></aside>
+      </section>
+
+      <nav class="category-row" id="categories" aria-label="游戏分类"></nav>
+
+      <section>
+        <div class="content-toolbar">
+          <strong>游戏库</strong>
+          <div class="toolbar-actions">
+            <span id="result-count"></span>
+            <div
+              class="pagination-bar pagination-bar--compact"
+              id="pagination-top"
+              aria-label="游戏列表顶部分页"
+            ></div>
+          </div>
+        </div>
+        <div class="empty-state" id="empty">暂无匹配游戏</div>
+        <div class="game-grid" id="game-grid"></div>
+        <div class="pagination-bar" id="pagination-bottom" aria-label="游戏列表底部分页"></div>
+      </section>
+    </main>
+
+    <script src="./public/game-data.js"></script>
+    <script>
+      const fallbackData = window.GAMEHUB_DATA;
+      const pageSize = 48;
+      let currentPage = 1;
+      let effectivePageSize = pageSize;
+      let selectedCategory = "";
+      let query = "";
+      let categories = [];
+      let games = [];
+      let total = 0;
+      let isUsingApi = true;
+
+      const categoryRoot = document.getElementById("categories");
+      const grid = document.getElementById("game-grid");
+      const empty = document.getElementById("empty");
+      const count = document.getElementById("result-count");
+      const spotlight = document.getElementById("spotlight");
+      const stats = document.getElementById("stats");
+      const searchInput = document.getElementById("search-input");
+      const paginationRoots = [
+        document.getElementById("pagination-top"),
+        document.getElementById("pagination-bottom"),
+      ];
+
+      function normalizeGame(game) {
+        const gameCategories = game.categories || [];
+        return {
+          id: game.id,
+          title: game.title,
+          slug: game.slug,
+          category: gameCategories[0]?.slug || game.category_slug,
+          categoryName: gameCategories.length
+            ? gameCategories.map((category) => category.name).join(" / ")
+            : game.category_name || "未分类",
+          categories: gameCategories,
+          studio: game.studio,
+          year: game.release_year,
+          rating: Number(game.rating || 0),
+          cover: game.cover_url || "./public/assets/covers/game-placeholder.png",
+          summary: game.summary,
+          details: game.details,
+          size: extractGameSize(game.summary || game.details),
+          downloadUrl: game.download_url,
+          platforms: game.platforms || [],
+          tags: game.tags || [],
+        };
+      }
+
+      function normalizeFallbackGame(game) {
+        return {
+          ...game,
+          categoryName: game.categoryName,
+          year: game.year,
+          cover: game.cover,
+          size: extractGameSize(game.summary || game.details),
+          downloadUrl: game.downloadUrl,
+        };
+      }
+
+      function extractGameSize(text = "") {
+        const match = String(text).match(/资源大小：([^。，\n]+)/);
+        const size = match ? match[1].trim() : "";
+        return size && size !== "未知" && size !== "未知大小" ? size : "";
+      }
+
+      function syncQueryFromSearchInput() {
+        query = searchInput.value.trim();
+      }
+
+      async function requestJson(path) {
+        const response = await fetch(path);
+        if (!response.ok) {
+          throw new Error(`Request failed: ${response.status}`);
+        }
+        return response.json();
+      }
+
+      async function loadCategories() {
+        try {
+          const response = await requestJson("/api/categories");
+          categories = [
+            { slug: "", name: "全部游戏", gameCount: 0 },
+            ...response.items.map((category) => ({
+              slug: category.slug,
+              name: category.name,
+              gameCount: Number(category.game_count || 0),
+            })),
+          ];
+        } catch {
+          isUsingApi = false;
+          categories = fallbackData.categories.map(([slug, name, gameCount]) => ({
+            slug,
+            name,
+            gameCount: Number(gameCount || 0) || 0,
+          }));
+        }
+        renderCategories();
+      }
+
+      async function loadGames() {
+        try {
+          const params = new URLSearchParams({
+            page: String(currentPage),
+            page_size: String(pageSize),
+          });
+          if (query) {
+            params.set("query", query);
+          }
+          if (selectedCategory) {
+            params.set("category", selectedCategory);
+          }
+          const response = await requestJson(`/api/games?${params.toString()}`);
+          games = response.items.map(normalizeGame);
+          total = response.total;
+          currentPage = response.page;
+          effectivePageSize = response.page_size || pageSize;
+          isUsingApi = true;
+          if (games.length === 0 && total > 0 && currentPage > getTotalPages()) {
+            currentPage = getTotalPages();
+            await loadGames();
+            return;
+          }
+        } catch {
+          isUsingApi = false;
+          const fallbackGames = getFallbackGames();
+          total = fallbackGames.length;
+          effectivePageSize = pageSize;
+          currentPage = clampPage(currentPage);
+          games = fallbackGames.slice(
+            (currentPage - 1) * effectivePageSize,
+            currentPage * effectivePageSize,
+          );
+        }
+        renderStats();
+        renderGames();
+      }
+
+      function renderStats() {
+        const visibleGames = games.length ? games : getFallbackGames();
+        const latestYear = visibleGames.length
+          ? Math.max(...visibleGames.map((game) => Number(game.year || 0)))
+          : 0;
+        const bestGame = [...visibleGames].sort((a, b) => b.rating - a.rating)[0];
+        const categoryStat = getCategoryGameCountStat();
+        stats.innerHTML = `
+          <div class="stat-item"><span>收录游戏</span><strong>${total} 款</strong></div>
+          <div class="stat-item"><span>类型游戏</span><strong>${categoryStat}</strong></div>
+          <div class="stat-item"><span>最高评分</span><strong>${bestGame ? `${bestGame.rating.toFixed(1)} · ${bestGame.title}` : "-"}</strong></div>
+          <div class="stat-item"><span>最新年份</span><strong>${latestYear || "-"}</strong></div>
+        `;
+      }
+
+      function getCategoryGameCountStat() {
+        if (!selectedCategory) {
+          return `全部游戏：${total} 款`;
+        }
+
+        const category = categories.find((item) => item.slug === selectedCategory);
+        if (!category) {
+          return "-";
+        }
+
+        return `${category.name}：${Number(category.gameCount || 0)} 款`;
+      }
+
+      function renderCategories() {
+        categoryRoot.innerHTML = "";
+        categories.forEach(({ slug, name }) => {
+          const button = document.createElement("button");
+          button.className = `category-button ${selectedCategory === slug ? "active" : ""}`;
+          button.textContent = name;
+          button.addEventListener("click", () => {
+            selectedCategory = slug;
+            syncQueryFromSearchInput();
+            currentPage = 1;
+            renderCategories();
+            loadGames();
+          });
+          categoryRoot.appendChild(button);
+        });
+      }
+
+      function getFallbackGames() {
+        const keyword = query.toLowerCase();
+        return fallbackData.games
+          .map(normalizeFallbackGame)
+          .filter((game) => !selectedCategory || game.category === selectedCategory)
+          .filter((game) => {
+            if (!keyword) return true;
+            return [game.title, game.studio, game.summary, game.categoryName, ...game.tags]
+              .join(" ")
+              .toLowerCase()
+              .includes(keyword);
+          })
+          .sort((a, b) => b.rating - a.rating || b.year - a.year);
+      }
+
+      function renderSpotlight(game) {
+        if (!game) {
+          spotlight.innerHTML = "";
+          return;
+        }
+        spotlight.innerHTML = `
+          <img src="${game.cover}" alt="${game.title} 封面" />
+          <div class="hero-body">
+            <span class="eyebrow">${game.categoryName}</span>
+            <h1>${game.title}</h1>
+            <a class="button primary" href="./detail.html?slug=${encodeURIComponent(game.slug)}">查看详情</a>
+          </div>
+        `;
+      }
+
+      function renderGames() {
+        const visibleGames = games;
+        grid.innerHTML = "";
+        const start = total === 0 ? 0 : (currentPage - 1) * effectivePageSize + 1;
+        const end = total === 0 ? 0 : start + visibleGames.length - 1;
+        count.textContent = `显示 ${start}-${end} / ${total} 项结果`;
+        empty.style.display = visibleGames.length ? "none" : "block";
+        renderSpotlight(visibleGames[0]);
+        visibleGames.forEach((game) => {
+          const card = document.createElement("article");
+          card.className = "game-card";
+          card.innerHTML = `
+            <img src="${game.cover}" alt="${game.title} 封面" />
+            <div class="game-card-body">
+              <h2>${game.title}</h2>
+              <div class="game-card-facts">
+                <div><span>类型</span><strong>${game.categoryName}</strong></div>
+                ${
+                  game.year
+                    ? `<div><span>年份</span><strong>${game.year}</strong></div>`
+                    : ""
+                }
+              </div>
+              <div class="tag-list game-card-tags">
+                <span>${game.categories[0]?.name || game.categoryName}</span>
+                ${game.size ? `<span>${game.size}</span>` : ""}
+              </div>
+              <a class="button" href="./detail.html?slug=${encodeURIComponent(game.slug)}">查看详情</a>
+            </div>
+          `;
+          grid.appendChild(card);
+        });
+        renderPagination();
+      }
+
+      function getTotalPages() {
+        return Math.max(Math.ceil(total / effectivePageSize), 1);
+      }
+
+      function clampPage(page) {
+        return Math.min(Math.max(page, 1), getTotalPages());
+      }
+
+      async function goToPage(page) {
+        const nextPage = clampPage(page);
+        if (nextPage === currentPage) {
+          return;
+        }
+        currentPage = nextPage;
+        await loadGames();
+        scrollToTopPagination();
+      }
+
+      function scrollToTopPagination() {
+        const topPagination = document.getElementById("pagination-top");
+        const scrollTarget = topPagination?.closest(".content-toolbar") || topPagination;
+        scrollTarget?.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+        });
+      }
+
+      function createPageButton(label, page, disabled = false) {
+        const button = document.createElement("button");
+        button.className = "pagination-button";
+        button.type = "button";
+        button.textContent = label;
+        button.disabled = disabled;
+        button.addEventListener("click", () => goToPage(page));
+        return button;
+      }
+
+      function renderPagination() {
+        const totalPages = getTotalPages();
+        paginationRoots.forEach((pagination) => {
+          pagination.innerHTML = "";
+          pagination.style.display = total > effectivePageSize ? "flex" : "none";
+          if (total <= effectivePageSize) {
+            return;
+          }
+
+          const status = document.createElement("span");
+          status.className = "pagination-status";
+          status.textContent = `第 ${currentPage} / ${totalPages} 页`;
+
+          pagination.append(
+            createPageButton("首页", 1, currentPage === 1),
+            createPageButton("上一页", currentPage - 1, currentPage === 1),
+            status,
+            createPageButton("下一页", currentPage + 1, currentPage >= totalPages),
+            createPageButton("尾页", totalPages, currentPage >= totalPages),
+          );
+        });
+      }
+
+      document.getElementById("search-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        syncQueryFromSearchInput();
+        currentPage = 1;
+        loadGames();
+      });
+
+      loadCategories();
+      loadGames();
+    </script>
+  </body>
+</html>
