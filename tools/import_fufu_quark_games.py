@@ -16,7 +16,7 @@ from typing import Any
 ROOT_DIR = Path(__file__).resolve().parent.parent
 BACKEND_DIR = ROOT_DIR / "backend"
 DEFAULT_CSV_PATH = ROOT_DIR / "data" / "fufu_quark_only.csv"
-DEFAULT_COVER_URL = "/public/assets/covers/game-placeholder.png"
+DEFAULT_COVER_URL = "/public/assets/covers/default-game-cover.png"
 DEFAULT_STUDIO = "未知"
 DEFAULT_RATING = 0.0
 DEFAULT_PLATFORM = "PC"

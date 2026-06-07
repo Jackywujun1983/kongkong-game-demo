@@ -1,6 +1,6 @@
 # GitHub Pages 静态部署方案
 
-本文档用于将空空如也GameHub 发布为 GitHub Pages 静态站点。该方案不需要 Render，不需要信用卡，也不运行 Python 后端。
+本文档用于将空空如也GameHub 发布为 GitHub Pages 静态站点。该方案不需要信用卡，也不运行 Python 后端。
 
 ## 1. 方案结论
 
@@ -17,16 +17,16 @@ SQLite 数据库导出为 frontend/public/game-data.js
 https://jackywujun1983.github.io/kongkong-game-demo/
 ```
 
-## 2. 静态版和 Render 版的区别
+## 2. 静态版能力边界
 
-| 项目 | GitHub Pages 静态版 | Render 版 |
-| --- | --- | --- |
-| 是否免费 | 免费 | 免费但可能要求绑卡验证 |
-| 是否需要后端 | 不需要 | 需要 Python 服务 |
-| 是否支持 SQLite 运行时查询 | 不支持 | 支持 |
-| 数据来源 | 构建时导出的 `game-data.js` | `backend/gamehub.sqlite3` |
-| 是否支持用户注册/论坛写入 | 不支持 | 可扩展 |
-| 国内访问 | 通常比 Render 更容易打开，但仍是境外服务 | 不稳定 |
+| 项目 | GitHub Pages 静态版 |
+| --- | --- |
+| 是否免费 | 免费 |
+| 是否需要后端 | 不需要 |
+| 是否支持 SQLite 运行时查询 | 不支持 |
+| 数据来源 | 构建时导出的 `game-data.js` |
+| 是否支持用户注册/论坛写入 | 不支持 |
+| 国内访问 | 仍是境外服务，不保证所有网络稳定 |
 
 ## 3. 项目内已准备内容
 

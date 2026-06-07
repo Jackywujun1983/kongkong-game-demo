@@ -1,8 +1,0 @@
-services:
-  - type: web
-    name: kongkong-gamehub
-    runtime: python
-    plan: free
-    buildCommand: python --version
-    startCommand: python backend/main.py --host 0.0.0.0 --port $PORT --database backend/gamehub.sqlite3
-    healthCheckPath: /api/health

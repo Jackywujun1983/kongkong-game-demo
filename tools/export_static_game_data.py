@@ -11,6 +11,9 @@ from typing import Any
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 DATABASE_PATH = PROJECT_DIR / "backend" / "gamehub.sqlite3"
 OUTPUT_PATH = PROJECT_DIR / "frontend" / "public" / "game-data.js"
+DEFAULT_COVER_PATH = "./public/assets/covers/default-game-cover.png"
+LEGACY_PLACEHOLDER_PATH = "./public/assets/covers/game-placeholder.png"
+ABSOLUTE_LEGACY_PLACEHOLDER_PATH = "/public/assets/covers/game-placeholder.png"
 
 
 def main() -> None:
@@ -112,7 +115,7 @@ def map_game_row(row: sqlite3.Row) -> dict[str, Any]:
         "studio": row["studio"],
         "year": row["release_year"],
         "rating": float(row["rating"] or 0),
-        "cover": row["cover_url"] or "./public/assets/covers/game-placeholder.png",
+        "cover": normalize_cover_url(row["cover_url"]),
         "summary": row["summary"],
         "details": row["details"],
         "downloadUrl": row["download_url"],
@@ -181,6 +184,21 @@ def decode_json_list(value: str | None) -> list[str]:
     if not isinstance(decoded, list):
         return []
     return [str(item) for item in decoded]
+
+
+def normalize_cover_url(value: str | None) -> str:
+    """Return the default cover when a game has no usable cover URL."""
+    cover_url = (value or "").strip()
+    if not cover_url or cover_url in {
+        LEGACY_PLACEHOLDER_PATH,
+        ABSOLUTE_LEGACY_PLACEHOLDER_PATH,
+    }:
+        return DEFAULT_COVER_PATH
+    if cover_url.startswith("/public/"):
+        return f".{cover_url}"
+    if cover_url.startswith("public/"):
+        return f"./{cover_url}"
+    return cover_url
 
 
 if __name__ == "__main__":

@@ -25,6 +25,8 @@
 
     <script src="./public/game-data.js"></script>
     <script>
+      const defaultCover = "./public/assets/covers/default-game-cover.png";
+      const legacyPlaceholderCover = "./public/assets/covers/game-placeholder.png";
       const fallbackData = window.GAMEHUB_DATA;
       const params = new URLSearchParams(window.location.search);
       const slug = params.get("slug");
@@ -44,7 +46,7 @@
           studio: game.studio,
           year: game.release_year,
           rating: Number(game.rating || 0),
-          cover: game.cover_url || "./public/assets/covers/game-placeholder.png",
+          cover: normalizeCover(game.cover_url),
           summary: game.summary,
           details: game.details,
           size: extractGameSize(game.summary || game.details),
@@ -59,10 +61,32 @@
           ...game,
           categoryName: game.categoryName,
           year: game.year,
-          cover: game.cover,
+          cover: normalizeCover(game.cover),
           size: extractGameSize(game.summary || game.details),
           downloadUrl: game.downloadUrl,
         };
+      }
+
+      function normalizeCover(cover) {
+        const coverUrl = String(cover || "").trim();
+        if (
+          !coverUrl ||
+          coverUrl === legacyPlaceholderCover ||
+          coverUrl === "/public/assets/covers/game-placeholder.png"
+        ) {
+          return defaultCover;
+        }
+        if (coverUrl.startsWith("/public/")) {
+          return `.${coverUrl}`;
+        }
+        if (coverUrl.startsWith("public/")) {
+          return `./${coverUrl}`;
+        }
+        return coverUrl;
+      }
+
+      function fallbackCoverAttribute() {
+        return `onerror="this.onerror=null;this.src='${defaultCover}'"`;
       }
 
       function extractGameSize(text = "") {
@@ -133,7 +157,7 @@
           </nav>
           <article class="detail-layout">
             <div class="detail-cover">
-              <img src="${game.cover}" alt="${game.title} 封面" />
+              <img src="${game.cover}" alt="${game.title} 封面" ${fallbackCoverAttribute()} />
             </div>
             <div class="detail-panel detail-copy">
               <span class="eyebrow">${game.categoryName}</span>
@@ -166,7 +190,7 @@
                 .map(
                   (item) => `
                     <a class="related-card" href="./detail.html?slug=${encodeURIComponent(item.slug)}">
-                      <img src="${item.cover}" alt="${item.title} 封面" />
+                      <img src="${item.cover}" alt="${item.title} 封面" ${fallbackCoverAttribute()} />
                       <div>
                         <strong>${item.title}</strong>
                         <p>${item.summary}</p>
