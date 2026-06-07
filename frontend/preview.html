@@ -234,7 +234,7 @@
         const keyword = query.toLowerCase();
         return fallbackData.games
           .map(normalizeFallbackGame)
-          .filter((game) => !selectedCategory || game.category === selectedCategory)
+          .filter((game) => !selectedCategory || gameHasCategory(game, selectedCategory))
           .filter((game) => {
             if (!keyword) return true;
             return [game.title, game.studio, game.summary, game.categoryName, ...game.tags]
@@ -243,6 +243,14 @@
               .includes(keyword);
           })
           .sort((a, b) => b.rating - a.rating || b.year - a.year);
+      }
+
+      function gameHasCategory(game, category) {
+        return (
+          game.category === category ||
+          game.categoryName === category ||
+          game.categories.some((item) => item.slug === category || item.name === category)
+        );
       }
 
       function renderSpotlight(game) {

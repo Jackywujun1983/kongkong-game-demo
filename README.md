@@ -22,6 +22,7 @@
 - `docs/前端页面布局文档.md`
 - `docs/游戏类型枚举文档.md`
 - `docs/部署/Render Free部署方案.md`
+- `docs/部署/GitHub Pages静态部署方案.md`
 - `docs/规范/Python编码规范.md`
 - `docs/规范/前端主流开发框架规范.md`
 - `docs/规范/测试规范.md`

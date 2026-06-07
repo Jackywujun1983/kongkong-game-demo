@@ -156,7 +156,7 @@
       function renderRelated(game) {
         const relatedGames = fallbackData.games
           .map(normalizeFallbackGame)
-          .filter((item) => item.category === game.category && item.slug !== game.slug)
+          .filter((item) => item.slug !== game.slug && gameSharesCategory(item, game))
           .slice(0, 3);
         if (relatedGames.length) {
           relatedRoot.innerHTML = `
@@ -178,6 +178,15 @@
             </div>
           `;
         }
+      }
+
+      function gameSharesCategory(item, game) {
+        const gameCategories = new Set(
+          game.categories.flatMap((category) => [category.slug, category.name]),
+        );
+        return item.categories.some(
+          (category) => gameCategories.has(category.slug) || gameCategories.has(category.name),
+        );
       }
 
       async function loadDetail() {
