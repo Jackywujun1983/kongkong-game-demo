@@ -4,19 +4,20 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>空空如也GameHub 游戏详情</title>
-    <link rel="stylesheet" href="./public/site.css" />
+    <link rel="stylesheet" href="./public/site.css?v=20260610-ui-refresh" />
   </head>
   <body>
     <main class="shell">
-      <header class="topbar">
-        <a class="brand" href="./preview.html">
+      <header class="topbar detail-topbar">
+        <a class="brand detail-brand" href="./preview.html" aria-label="返回首页">
           <span class="brand-mark">◆</span>
           <span>空空如也GameHub</span>
         </a>
-        <div></div>
-        <nav class="nav-links" aria-label="主导航">
-          <a class="active" href="./preview.html">游戏库</a>
-        </nav>
+        <div class="detail-topbar-ornament" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
       </header>
 
       <section id="detail-root"></section>
@@ -25,7 +26,8 @@
 
     <script src="./public/game-data.js"></script>
     <script>
-      const defaultCover = "./public/assets/covers/default-game-cover.jpg";
+      const assetVersion = "20260610-ui-refresh";
+      const defaultCover = `./public/assets/covers/default-game-cover.jpg?v=${assetVersion}`;
       const legacyPlaceholderCover = "./public/assets/covers/game-placeholder.png";
       const fallbackData = window.GAMEHUB_DATA;
       const params = new URLSearchParams(window.location.search);
@@ -145,16 +147,7 @@
       function renderGame(game) {
         document.title = `${game.title} - 空空如也GameHub 游戏详情`;
         const safeDownloadUrl = escapeHtml(game.downloadUrl || "");
-        const safeTitle = escapeHtml(game.title);
         detailRoot.innerHTML = `
-          <nav class="detail-breadcrumb" aria-label="详情页导航">
-            <a class="detail-back-link" href="./preview.html">
-              <span class="detail-back-icon" aria-hidden="true">&larr;</span>
-              <span>返回游戏库</span>
-            </a>
-            <span class="detail-breadcrumb-separator" aria-hidden="true">/</span>
-            <span class="detail-breadcrumb-current">${safeTitle}</span>
-          </nav>
           <article class="detail-layout">
             <div class="detail-cover">
               <img src="${game.cover}" alt="${game.title} 封面" ${fallbackCoverAttribute()} />

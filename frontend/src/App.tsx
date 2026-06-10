@@ -83,10 +83,10 @@ export default function App() {
   return (
     <main className="app-shell">
       <header className="topbar">
-        <div className="brand-mark">
+        <a className="brand-mark" href="/preview.html" aria-label="返回首页">
           <Gamepad2 size={24} />
           <span>空空如也GameHub</span>
-        </div>
+        </a>
         <form className="search-form" onSubmit={handleSearch}>
           <Search size={18} />
           <input
@@ -99,9 +99,6 @@ export default function App() {
             检索
           </button>
         </form>
-        <div className="topbar-actions">
-          <a href="/preview.html">游戏库</a>
-        </div>
       </header>
 
       <div className="dashboard-layout dashboard-layout--focused">

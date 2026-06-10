@@ -85,9 +85,16 @@ img {
   align-items: center;
   min-width: 0;
   min-height: 50px;
+  width: max-content;
+  border-radius: var(--radius-card);
   color: var(--color-text);
+  cursor: pointer;
   font-size: 1.12rem;
   font-weight: 950;
+  text-decoration: none;
+  transition:
+    transform 160ms ease,
+    color 160ms ease;
 }
 
 .brand-mark svg {
@@ -100,6 +107,26 @@ img {
   background: var(--color-warning);
   color: var(--color-text);
   box-shadow: var(--shadow-ink);
+  transition:
+    box-shadow 160ms ease,
+    background 160ms ease;
+}
+
+.brand-mark:hover,
+.brand-mark:focus-visible {
+  color: var(--color-primary-strong);
+  transform: translate(-1px, -1px);
+}
+
+.brand-mark:hover svg,
+.brand-mark:focus-visible svg {
+  background: var(--color-panel-soft);
+  box-shadow: 7px 7px 0 rgba(32, 34, 31, 0.18);
+}
+
+.brand-mark:focus-visible {
+  outline: 3px solid rgba(8, 127, 114, 0.24);
+  outline-offset: 4px;
 }
 
 .topbar-actions {
