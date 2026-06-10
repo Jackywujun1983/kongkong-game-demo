@@ -45,10 +45,11 @@ export function GameCard({ game, onOpen }: GameCardProps) {
             </div>
           ) : null}
         </div>
-        <div className="tag-list game-card__tags">
-          <span>{game.categories[0]?.name || categoryNames}</span>
-          {gameSize ? <span>{gameSize}</span> : null}
-        </div>
+        {gameSize ? (
+          <div className="tag-list game-card__tags">
+            <span>{gameSize}</span>
+          </div>
+        ) : null}
         <button
           className="icon-text-button"
           type="button"

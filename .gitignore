@@ -2,6 +2,7 @@ backend/*.sqlite3
 !backend/gamehub.sqlite3
 backend/*.sqlite3-journal
 backend/*.log
+data/
 frontend/dist/
 frontend/node_modules/
 *.pyc

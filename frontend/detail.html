@@ -15,7 +15,7 @@
         </a>
         <div></div>
         <nav class="nav-links" aria-label="主导航">
-          <a href="./preview.html">游戏库</a>
+          <a class="active" href="./preview.html">游戏库</a>
         </nav>
       </header>
 
@@ -186,22 +186,37 @@
           relatedRoot.innerHTML = `
             <h2>同分类推荐</h2>
             <div class="related-grid">
-              ${relatedGames
-                .map(
-                  (item) => `
-                    <a class="related-card" href="./detail.html?slug=${encodeURIComponent(item.slug)}">
-                      <img src="${item.cover}" alt="${item.title} 封面" ${fallbackCoverAttribute()} />
-                      <div>
-                        <strong>${item.title}</strong>
-                        <p>${item.summary}</p>
-                      </div>
-                    </a>
-                  `,
-                )
-                .join("")}
+              ${relatedGames.map(renderRelatedCard).join("")}
             </div>
           `;
+        } else {
+          relatedRoot.innerHTML = "";
         }
+      }
+
+      function renderRelatedCard(item) {
+        const safeTitle = escapeHtml(item.title);
+        const safeCategoryName = escapeHtml(item.categoryName);
+        const safeCover = escapeHtml(item.cover);
+        const safeYear = item.year ? escapeHtml(item.year) : "未标注";
+        const safeSize = item.size ? escapeHtml(item.size) : "未标注";
+        const safePlatforms = escapeHtml(item.platforms.join(" / ") || "PC");
+
+        return `
+          <a class="related-card" href="./detail.html?slug=${encodeURIComponent(item.slug)}">
+            <img src="${safeCover}" alt="${safeTitle} 封面" ${fallbackCoverAttribute()} />
+            <div class="related-card-body">
+              <span class="eyebrow">${safeCategoryName}</span>
+              <strong class="related-card-title">${safeTitle}</strong>
+              <div class="detail-stat-grid related-stat-grid">
+                <div class="detail-stat"><span>评分</span><strong>★ ${item.rating.toFixed(1)}</strong></div>
+                <div class="detail-stat"><span>发行年份</span><strong>${safeYear}</strong></div>
+                <div class="detail-stat"><span>游戏大小</span><strong>${safeSize}</strong></div>
+              </div>
+              <p class="related-platform">支持平台：${safePlatforms}</p>
+            </div>
+          </a>
+        `;
       }
 
       function gameSharesCategory(item, game) {

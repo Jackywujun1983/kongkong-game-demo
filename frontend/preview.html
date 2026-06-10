@@ -27,7 +27,12 @@
         <aside class="stat-strip" id="stats"></aside>
       </section>
 
-      <nav class="category-row" id="categories" aria-label="游戏分类"></nav>
+      <section class="category-filter-panel" aria-label="游戏分类筛选">
+        <div class="category-filter-head">
+          <strong>游戏类型</strong>
+        </div>
+        <nav class="category-row" id="categories" aria-label="游戏分类"></nav>
+      </section>
 
       <section>
         <div class="content-toolbar">
@@ -61,6 +66,8 @@
       let games = [];
       let total = 0;
       let isUsingApi = true;
+      let isCategoryExpanded = false;
+      const collapsedCategoryLimit = 12;
 
       const categoryRoot = document.getElementById("categories");
       const grid = document.getElementById("game-grid");
@@ -239,19 +246,40 @@
 
       function renderCategories() {
         categoryRoot.innerHTML = "";
-        categories.forEach(({ slug, name }) => {
+        const shouldShowToggle = categories.length > collapsedCategoryLimit;
+        const visibleCategories = isCategoryExpanded
+          ? categories
+          : categories.slice(0, collapsedCategoryLimit);
+
+        visibleCategories.forEach(({ slug, name }) => {
           const button = document.createElement("button");
           button.className = `category-button ${selectedCategory === slug ? "active" : ""}`;
           button.textContent = name;
+          button.title = name;
           button.addEventListener("click", () => {
             selectedCategory = slug;
-            syncQueryFromSearchInput();
+            searchInput.value = "";
+            query = "";
             currentPage = 1;
             renderCategories();
             loadGames();
           });
           categoryRoot.appendChild(button);
         });
+
+        if (shouldShowToggle) {
+          const toggle = document.createElement("button");
+          toggle.className = "category-toggle-button";
+          toggle.type = "button";
+          toggle.textContent = isCategoryExpanded
+            ? "收起类型"
+            : `展开全部类型（${categories.length}）`;
+          toggle.addEventListener("click", () => {
+            isCategoryExpanded = !isCategoryExpanded;
+            renderCategories();
+          });
+          categoryRoot.appendChild(toggle);
+        }
       }
 
       function getFallbackGames() {
@@ -315,10 +343,11 @@
                     : ""
                 }
               </div>
-              <div class="tag-list game-card-tags">
-                <span>${game.categories[0]?.name || game.categoryName}</span>
-                ${game.size ? `<span>${game.size}</span>` : ""}
-              </div>
+              ${
+                game.size
+                  ? `<div class="tag-list game-card-tags"><span>${game.size}</span></div>`
+                  : ""
+              }
               <a class="button" href="./detail.html?slug=${encodeURIComponent(game.slug)}">查看详情</a>
             </div>
           `;

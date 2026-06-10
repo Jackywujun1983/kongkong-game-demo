@@ -75,7 +75,8 @@ export default function App() {
   }
 
   function handleSelectCategory(category: string) {
-    setActiveQuery(searchTerm.trim());
+    setSearchTerm("");
+    setActiveQuery("");
     setSelectedCategory(category);
   }
 
