@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 import sqlite3
 from pathlib import Path
 from typing import Any
@@ -11,6 +12,8 @@ from typing import Any
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 DATABASE_PATH = PROJECT_DIR / "backend" / "gamehub.sqlite3"
 OUTPUT_PATH = PROJECT_DIR / "frontend" / "public" / "game-data.js"
+PIC_SOURCE_DIR = PROJECT_DIR / "data" / "pic"
+STATIC_PIC_DIR = PROJECT_DIR / "frontend" / "pic"
 DEFAULT_COVER_PATH = "./public/assets/covers/default-game-cover.jpg"
 LEGACY_PLACEHOLDER_PATH = "./public/assets/covers/game-placeholder.png"
 ABSOLUTE_LEGACY_PLACEHOLDER_PATH = "/public/assets/covers/game-placeholder.png"
@@ -29,6 +32,11 @@ def main() -> None:
     print(
         f"Exported {len(payload['games'])} games and "
         f"{len(payload['categories'])} categories to {OUTPUT_PATH}"
+    )
+    copied_count, missing_count = sync_static_cover_assets(payload["games"])
+    print(
+        f"Synced {copied_count} cover files to {STATIC_PIC_DIR}; "
+        f"{missing_count} referenced covers were missing"
     )
 
 
@@ -201,6 +209,48 @@ def normalize_cover_url(value: str | None) -> str:
     if cover_url.startswith("public/"):
         return f"./{cover_url}"
     return cover_url
+
+
+def sync_static_cover_assets(games: list[dict[str, Any]]) -> tuple[int, int]:
+    """Copy referenced pic/ cover files into frontend for GitHub Pages."""
+    STATIC_PIC_DIR.mkdir(parents=True, exist_ok=True)
+    copied_count = 0
+    missing_count = 0
+    seen_covers = set()
+
+    for game in games:
+        cover_url = str(game.get("cover") or "").strip()
+        if not cover_url.startswith("pic/") or cover_url in seen_covers:
+            continue
+        seen_covers.add(cover_url)
+
+        relative_cover_path = Path(cover_url.removeprefix("pic/"))
+        source_path = PIC_SOURCE_DIR / relative_cover_path
+        target_path = STATIC_PIC_DIR / relative_cover_path
+        if not source_path.is_file():
+            missing_count += 1
+            continue
+
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        if _is_same_file(source_path, target_path):
+            continue
+
+        shutil.copy2(source_path, target_path)
+        copied_count += 1
+
+    return copied_count, missing_count
+
+
+def _is_same_file(source_path: Path, target_path: Path) -> bool:
+    """Return whether the target already matches the source by size and mtime."""
+    if not target_path.is_file():
+        return False
+    source_stat = source_path.stat()
+    target_stat = target_path.stat()
+    return (
+        source_stat.st_size == target_stat.st_size
+        and int(source_stat.st_mtime) == int(target_stat.st_mtime)
+    )
 
 
 if __name__ == "__main__":

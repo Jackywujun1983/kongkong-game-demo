@@ -49,6 +49,7 @@ git add -- .github/workflows/github-pages.yml ^
   frontend/README.md ^
   frontend/index.html ^
   frontend/detail.html ^
+  frontend/pic ^
   frontend/preview.html ^
   frontend/public/assets/covers/default-game-cover.jpg ^
   frontend/public/assets/covers/default-game-cover.png ^

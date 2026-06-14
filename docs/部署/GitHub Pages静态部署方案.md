@@ -39,6 +39,7 @@ https://jackywujun1983.github.io/kongkong-game-demo/
 | 页面入口 | `frontend/index.html`、`frontend/preview.html`、`frontend/detail.html` | GitHub Pages 实际访问页面 |
 | 页面样式 | `frontend/public/site.css` | 当前最终 UI 风格 |
 | 默认封面 | `frontend/public/assets/covers/default-game-cover.jpg` | 无封面或图片加载失败时的兜底图 |
+| 游戏封面 | `frontend/pic/` | 从 `data/pic/` 同步出来的真实游戏封面 |
 | 静态数据 | `frontend/public/game-data.js` | API 不可用时首页和详情页读取的数据 |
 | 数据源 | `backend/gamehub.sqlite3` | GitHub Actions 导出静态数据时读取的 SQLite 文件 |
 | 导出脚本 | `tools/export_static_game_data.py` | 构建时生成 `game-data.js` |
@@ -67,6 +68,7 @@ tools/export_static_game_data.py
 - 导出可见分类。
 - 导出全部游戏、详情、分类、下载地址、游戏大小和封面地址。
 - 写入 `frontend/public/game-data.js`。
+- 把数据库引用到的 `pic/` 封面从 `data/pic/` 同步复制到 `frontend/pic/`。
 
 本地手动执行：
 
@@ -87,6 +89,7 @@ python tools\export_static_game_data.py
 - 使用 Python 导出静态游戏数据。
 - 只上传 `frontend` 目录作为 GitHub Pages 站点。
 - 不发布 `backend`、`tools`、SQLite 原始数据库等项目文件。
+- `frontend/pic/` 会随静态站点一起发布，用于展示真实游戏封面。
 - `frontend/public/assets/covers/default-game-cover.jpg` 会随静态站点一起发布，用于无封面或图片加载失败的兜底展示。
 
 ### 4.3 静态站点入口
@@ -170,7 +173,7 @@ cd /d E:\Codex_Space\PythonDemo && tools\publish_ui_update.cmd "Deploy GameHub s
 cd /d E:\Codex_Space\PythonDemo
 python tools\export_static_game_data.py
 git add -u -- .
-git add .github\workflows\github-pages.yml publish_static_site.cmd publish_site.cmd tools\publish_ui_update.cmd backend\gamehub.sqlite3 frontend\public\game-data.js docs
+git add .github\workflows\github-pages.yml publish_static_site.cmd publish_site.cmd tools\publish_ui_update.cmd backend\gamehub.sqlite3 frontend\pic frontend\public\game-data.js docs
 git commit -m "Deploy GameHub static site"
 git push origin main
 ```
@@ -276,6 +279,7 @@ publish_static_site.cmd
 - GitHub Pages 只能发布静态页面，不能运行 Python。
 - `/api/health`、`/api/games` 等接口在 GitHub Pages 上不可用。
 - 当前首页和详情页会在 API 不可用时使用 `frontend/public/game-data.js`。
+- 当前真实游戏封面会从 `frontend/pic/` 加载。
 - 当前默认封面图片属于静态资源，可以直接随 GitHub Pages 发布。
 - GitHub Actions 会重新生成 `frontend/public/game-data.js`，因此 `backend/gamehub.sqlite3` 也必须随数据更新一起提交。
 - 如果后续要恢复用户注册、论坛、后台写入等功能，需要重新部署后端服务。
