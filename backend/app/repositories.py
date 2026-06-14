@@ -96,6 +96,7 @@ def search_games(
                 g.rating,
                 g.cover_url,
                 g.download_url,
+                g.size,
                 g.summary,
                 g.platforms,
                 g.tags,
@@ -156,6 +157,7 @@ def get_game(slug: str, database_path: Path = DATABASE_PATH) -> dict[str, Any] |
                 g.rating,
                 g.cover_url,
                 g.download_url,
+                g.size,
                 g.summary,
                 g.details,
                 g.platforms,
@@ -205,6 +207,7 @@ def _map_game_row(
 ) -> dict[str, Any]:
     """将 games 表查询行转换为 API 响应结构。"""
     game = row_to_dict(row)
+    game["size"] = str(game.get("size") or "")
     game["platforms"] = decode_json_list(game.get("platforms"))
     game["tags"] = decode_json_list(game.get("tags"))
     if not include_details:

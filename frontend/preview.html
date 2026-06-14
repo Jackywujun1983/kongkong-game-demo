@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>空空如也GameHub 游戏信息检索</title>
-    <link rel="stylesheet" href="./public/site.css?v=20260610-ui-refresh" />
+    <link rel="stylesheet" href="./public/site.css?v=20260614-focus-summary" />
   </head>
   <body>
     <main class="shell">
@@ -26,7 +26,7 @@
 
       <section class="category-filter-panel" aria-label="游戏分类筛选">
         <div class="category-filter-head">
-          <strong>游戏类型</strong>
+          <strong>类型</strong>
         </div>
         <nav class="category-row" id="categories" aria-label="游戏分类"></nav>
       </section>
@@ -51,7 +51,7 @@
 
     <script src="./public/game-data.js"></script>
     <script>
-      const assetVersion = "20260610-ui-refresh";
+      const assetVersion = "20260614-focus-summary";
       const defaultCover = `./public/assets/covers/default-game-cover.jpg?v=${assetVersion}`;
       const legacyPlaceholderCover = "./public/assets/covers/game-placeholder.png";
       const fallbackData = window.GAMEHUB_DATA;
@@ -65,6 +65,7 @@
       let total = 0;
       let isUsingApi = true;
       let isCategoryExpanded = false;
+      let spotlightGameSlug = "";
       const collapsedCategoryLimit = 12;
 
       const categoryRoot = document.getElementById("categories");
@@ -96,7 +97,7 @@
           cover: normalizeCover(game.cover_url),
           summary: game.summary,
           details: game.details,
-          size: extractGameSize(game.summary || game.details),
+          size: normalizeGameSize(game.size),
           downloadUrl: game.download_url,
           platforms: game.platforms || [],
           tags: game.tags || [],
@@ -108,8 +109,8 @@
           ...game,
           categoryName: game.categoryName,
           year: game.year,
-          cover: normalizeCover(game.cover),
-          size: extractGameSize(game.summary || game.details),
+          cover: normalizeCover(game.cover_url || game.coverUrl || game.cover),
+          size: normalizeGameSize(game.size),
           downloadUrl: game.downloadUrl,
         };
       }
@@ -129,6 +130,9 @@
         if (coverUrl.startsWith("public/")) {
           return `./${coverUrl}`;
         }
+        if (coverUrl.startsWith("pic/")) {
+          return window.location.protocol === "file:" ? `../data/${coverUrl}` : coverUrl;
+        }
         return coverUrl;
       }
 
@@ -136,10 +140,20 @@
         return `onerror="this.onerror=null;this.src='${defaultCover}'"`;
       }
 
-      function extractGameSize(text = "") {
-        const match = String(text).match(/资源大小：([^。，\n]+)/);
-        const size = match ? match[1].trim() : "";
-        return size && size !== "未知" && size !== "未知大小" ? size : "";
+      function normalizeGameSize(value = "") {
+        const size = String(value).trim();
+        return size && size !== "未知" && size !== "未知大小" && size !== "未标注"
+          ? size
+          : "";
+      }
+
+      function escapeHtml(value = "") {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
       }
 
       function syncQueryFromSearchInput() {
@@ -219,27 +233,30 @@
         const latestYear = visibleGames.length
           ? Math.max(...visibleGames.map((game) => Number(game.year || 0)))
           : 0;
-        const bestGame = [...visibleGames].sort((a, b) => b.rating - a.rating)[0];
-        const categoryStat = getCategoryGameCountStat();
+        const spotlightGame = getSpotlightGame(visibleGames);
+        const typeStat = escapeHtml(getSpotlightGameCategoryNames(spotlightGame));
+        const sizeStat = escapeHtml(spotlightGame?.size || "未标注");
         stats.innerHTML = `
           <div class="stat-item"><span>收录游戏</span><strong>${total} 款</strong></div>
-          <div class="stat-item"><span>类型游戏</span><strong>${categoryStat}</strong></div>
-          <div class="stat-item"><span>最高评分</span><strong>${bestGame ? `${bestGame.rating.toFixed(1)} · ${bestGame.title}` : "-"}</strong></div>
-          <div class="stat-item"><span>最新年份</span><strong>${latestYear || "-"}</strong></div>
+          <div class="stat-item"><span>类型</span><strong>${typeStat}</strong></div>
+          <div class="stat-item"><span>年份</span><strong>${latestYear || "-"}</strong></div>
+          <div class="stat-item stat-item--size"><span>大小</span><strong>${sizeStat}</strong></div>
         `;
       }
 
-      function getCategoryGameCountStat() {
-        if (!selectedCategory) {
-          return `全部游戏：${total} 款`;
-        }
-
-        const category = categories.find((item) => item.slug === selectedCategory);
-        if (!category) {
+      function getSpotlightGameCategoryNames(game) {
+        if (!game) {
           return "-";
         }
 
-        return `${category.name}：${Number(category.gameCount || 0)} 款`;
+        const names = game.categories
+          .map((category) => category.name)
+          .filter(Boolean);
+        if (names.length) {
+          return [...new Set(names)].join(" / ");
+        }
+
+        return game.categoryName || "-";
       }
 
       function renderCategories() {
@@ -303,19 +320,50 @@
         );
       }
 
+      function getSpotlightGame(visibleGames) {
+        if (!visibleGames.length) {
+          return null;
+        }
+        return (
+          visibleGames.find((game) => game.slug === spotlightGameSlug) ||
+          visibleGames[0]
+        );
+      }
+
       function renderSpotlight(game) {
         if (!game) {
           spotlight.innerHTML = "";
           return;
         }
+        const safeTitle = escapeHtml(game.title);
+        const safeSummary = escapeHtml(game.summary || "暂无游戏简介。");
+        const safeCover = escapeHtml(game.cover);
         spotlight.innerHTML = `
-          <img src="${game.cover}" alt="${game.title} 封面" ${fallbackCoverAttribute()} />
+          <img src="${safeCover}" alt="${safeTitle} 封面" ${fallbackCoverAttribute()} />
           <div class="hero-body">
-            <span class="eyebrow">${game.categoryName}</span>
-            <h1>${game.title}</h1>
+            <h1>${safeTitle}</h1>
+            <p class="hero-summary">${safeSummary}</p>
             <a class="button primary" href="./detail.html?slug=${encodeURIComponent(game.slug)}">查看详情</a>
           </div>
         `;
+      }
+
+      function selectSpotlightGame(slug) {
+        spotlightGameSlug = slug;
+        renderStats();
+        renderGames();
+        scrollToSpotlight();
+      }
+
+      function scrollToSpotlight() {
+        const scrollTarget = spotlight.closest(".overview") || spotlight;
+        requestAnimationFrame(() => {
+          scrollTarget.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+            inline: "nearest",
+          });
+        });
       }
 
       function renderGames() {
@@ -325,30 +373,38 @@
         const end = total === 0 ? 0 : start + visibleGames.length - 1;
         count.textContent = `显示 ${start}-${end} / ${total} 项结果`;
         empty.style.display = visibleGames.length ? "none" : "block";
-        renderSpotlight(visibleGames[0]);
+        const spotlightGame = getSpotlightGame(visibleGames);
+        spotlightGameSlug = spotlightGame?.slug || "";
+        renderSpotlight(spotlightGame);
         visibleGames.forEach((game) => {
           const card = document.createElement("article");
-          card.className = "game-card";
+          card.className = `game-card ${game.slug === spotlightGameSlug ? "is-spotlight" : ""}`;
+          card.tabIndex = 0;
+          card.setAttribute("role", "button");
+          card.setAttribute("aria-label", `展示 ${game.title} 到焦点游戏位`);
           card.innerHTML = `
             <img src="${game.cover}" alt="${game.title} 封面" ${fallbackCoverAttribute()} />
             <div class="game-card-body">
               <h2>${game.title}</h2>
               <div class="game-card-facts">
                 <div><span>类型</span><strong>${game.categoryName}</strong></div>
-                ${
-                  game.year
-                    ? `<div><span>年份</span><strong>${game.year}</strong></div>`
-                    : ""
-                }
               </div>
-              ${
-                game.size
-                  ? `<div class="tag-list game-card-tags"><span>${game.size}</span></div>`
-                  : ""
-              }
               <a class="button" href="./detail.html?slug=${encodeURIComponent(game.slug)}">查看详情</a>
             </div>
           `;
+          card.addEventListener("click", (event) => {
+            if (event.target.closest("a")) {
+              return;
+            }
+            selectSpotlightGame(game.slug);
+          });
+          card.addEventListener("keydown", (event) => {
+            if (event.key !== "Enter" && event.key !== " ") {
+              return;
+            }
+            event.preventDefault();
+            selectSpotlightGame(game.slug);
+          });
           grid.appendChild(card);
         });
         renderPagination();

@@ -51,7 +51,7 @@
           cover: normalizeCover(game.cover_url),
           summary: game.summary,
           details: game.details,
-          size: extractGameSize(game.summary || game.details),
+          size: normalizeGameSize(game.size),
           downloadUrl: game.download_url,
           platforms: game.platforms || [],
           tags: game.tags || [],
@@ -64,7 +64,7 @@
           categoryName: game.categoryName,
           year: game.year,
           cover: normalizeCover(game.cover),
-          size: extractGameSize(game.summary || game.details),
+          size: normalizeGameSize(game.size),
           downloadUrl: game.downloadUrl,
         };
       }
@@ -84,6 +84,9 @@
         if (coverUrl.startsWith("public/")) {
           return `./${coverUrl}`;
         }
+        if (coverUrl.startsWith("pic/")) {
+          return window.location.protocol === "file:" ? `../data/${coverUrl}` : coverUrl;
+        }
         return coverUrl;
       }
 
@@ -91,10 +94,11 @@
         return `onerror="this.onerror=null;this.src='${defaultCover}'"`;
       }
 
-      function extractGameSize(text = "") {
-        const match = String(text).match(/资源大小：([^。，\n]+)/);
-        const size = match ? match[1].trim() : "";
-        return size && size !== "未知" && size !== "未知大小" ? size : "";
+      function normalizeGameSize(value = "") {
+        const size = String(value).trim();
+        return size && size !== "未知" && size !== "未知大小" && size !== "未标注"
+          ? size
+          : "";
       }
 
       function escapeHtml(value = "") {
@@ -126,6 +130,19 @@
         `;
       }
 
+      function getGameDescription(game) {
+        return String(game.summary || game.details || "暂无游戏详情。").trim();
+      }
+
+      function renderCategoryTags(categoryName) {
+        return String(categoryName || "未分类")
+          .split("/")
+          .map((name) => name.trim())
+          .filter(Boolean)
+          .map((name) => `<span>${escapeHtml(name)}</span>`)
+          .join("");
+      }
+
       async function requestGame() {
         const response = await fetch(`/api/games/${encodeURIComponent(slug)}`);
         if (!response.ok) {
@@ -147,23 +164,36 @@
       function renderGame(game) {
         document.title = `${game.title} - 空空如也GameHub 游戏详情`;
         const safeDownloadUrl = escapeHtml(game.downloadUrl || "");
+        const safeTitle = escapeHtml(game.title);
+        const safeDetails = escapeHtml(getGameDescription(game));
+        const safeYear = game.year ? escapeHtml(game.year) : "未标注";
+        const safeSize = escapeHtml(game.size || "未标注");
+        const safePlatforms = escapeHtml(game.platforms.join(" / ") || "PC");
+        const categoryTags = renderCategoryTags(game.categoryName);
         detailRoot.innerHTML = `
           <article class="detail-layout">
             <div class="detail-cover">
-              <img src="${game.cover}" alt="${game.title} 封面" ${fallbackCoverAttribute()} />
+              <img src="${game.cover}" alt="${safeTitle} 封面" ${fallbackCoverAttribute()} />
             </div>
             <div class="detail-panel detail-copy">
-              <span class="eyebrow">${game.categoryName}</span>
-              <h1>${game.title}</h1>
-              ${renderDownloadAddress(game.downloadUrl)}
-              <div class="detail-stat-grid">
-                <div class="detail-stat"><span>评分</span><strong>★ ${game.rating.toFixed(1)}</strong></div>
-                <div class="detail-stat"><span>发行年份</span><strong>${game.year}</strong></div>
-                <div class="detail-stat"><span>游戏大小</span><strong>${game.size || "未标注"}</strong></div>
+              <h1>${safeTitle}</h1>
+              <div class="detail-main-content">
+                <p class="detail-description">${safeDetails}</p>
+                <section class="detail-info-section">
+                  <span class="detail-info-label">类型</span>
+                  <div class="detail-type-list">${categoryTags}</div>
+                </section>
+                <div class="detail-stat-grid">
+                  <div class="detail-stat"><span>年份</span><strong>${safeYear}</strong></div>
+                  <div class="detail-stat"><span>平台</span><strong>${safePlatforms}</strong></div>
+                  <div class="detail-stat"><span>大小</span><strong>${safeSize}</strong></div>
+                </div>
+                ${renderDownloadAddress(game.downloadUrl)}
               </div>
-              <p>支持平台：${game.platforms.join(" / ")}</p>
-              <div class="meta-row">
-                ${game.downloadUrl ? `<a class="button primary" href="${safeDownloadUrl}" target="_blank" rel="noreferrer">前往下载</a>` : ""}
+              <div class="detail-download-actions">
+                <div class="meta-row">
+                  ${game.downloadUrl ? `<a class="button primary" href="${safeDownloadUrl}" target="_blank" rel="noreferrer">前往下载</a>` : ""}
+                </div>
               </div>
             </div>
           </article>
@@ -202,11 +232,10 @@
               <span class="eyebrow">${safeCategoryName}</span>
               <strong class="related-card-title">${safeTitle}</strong>
               <div class="detail-stat-grid related-stat-grid">
-                <div class="detail-stat"><span>评分</span><strong>★ ${item.rating.toFixed(1)}</strong></div>
-                <div class="detail-stat"><span>发行年份</span><strong>${safeYear}</strong></div>
-                <div class="detail-stat"><span>游戏大小</span><strong>${safeSize}</strong></div>
+                <div class="detail-stat"><span>年份</span><strong>${safeYear}</strong></div>
+                <div class="detail-stat"><span>平台</span><strong>${safePlatforms}</strong></div>
+                <div class="detail-stat"><span>大小</span><strong>${safeSize}</strong></div>
               </div>
-              <p class="related-platform">支持平台：${safePlatforms}</p>
             </div>
           </a>
         `;

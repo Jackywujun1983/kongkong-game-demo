@@ -16,7 +16,6 @@ export function GameCard({ game, onOpen }: GameCardProps) {
   const categoryNames = game.categories.length
     ? game.categories.map((category) => category.name).join(" / ")
     : game.category_name || "未分类";
-  const gameSize = extractGameSize(game.summary);
 
   return (
     <motion.article
@@ -38,18 +37,7 @@ export function GameCard({ game, onOpen }: GameCardProps) {
             <span>类型</span>
             <strong>{categoryNames}</strong>
           </div>
-          {game.release_year ? (
-            <div>
-              <span>年份</span>
-              <strong>{game.release_year}</strong>
-            </div>
-          ) : null}
         </div>
-        {gameSize ? (
-          <div className="tag-list game-card__tags">
-            <span>{gameSize}</span>
-          </div>
-        ) : null}
         <button
           className="icon-text-button"
           type="button"
@@ -61,12 +49,6 @@ export function GameCard({ game, onOpen }: GameCardProps) {
       </div>
     </motion.article>
   );
-}
-
-function extractGameSize(text: string): string {
-  const matchedSize = text.match(/资源大小：([^。，\n]+)/);
-  const size = matchedSize?.[1]?.trim() || "";
-  return size && size !== "未知" && size !== "未知大小" ? size : "";
 }
 
 function useDefaultCover(event: SyntheticEvent<HTMLImageElement>): void {

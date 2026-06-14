@@ -324,6 +324,7 @@ textarea {
   gap: 18px;
   align-items: stretch;
   margin: 6px 0 18px;
+  scroll-margin-top: 96px;
 }
 
 .hero-panel,
@@ -371,7 +372,14 @@ textarea {
   margin-top: auto;
 }
 
-.hero-body h1,
+.hero-body h1 {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 3.35rem;
+  font-weight: 950;
+  line-height: 1.04;
+}
+
 .detail-copy h1 {
   margin: 0;
   overflow-wrap: anywhere;
@@ -387,6 +395,18 @@ textarea {
   margin: 0;
   color: var(--muted);
   line-height: 1.62;
+}
+
+.hero-summary {
+  display: -webkit-box;
+  max-width: 720px;
+  overflow: hidden;
+  color: #4f584d;
+  font-size: 1.02rem;
+  font-weight: 700;
+  line-height: 1.72;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
 }
 
 .detail-breadcrumb {
@@ -432,7 +452,9 @@ textarea {
 
 .download-address {
   display: grid;
-  gap: 8px;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
   padding: 14px;
   border: 2px dashed var(--line-strong);
   border-radius: var(--radius);
@@ -442,9 +464,17 @@ textarea {
 }
 
 .download-address-label {
-  color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  width: max-content;
+  min-height: 28px;
+  padding: 4px 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: rgba(236, 203, 102, 0.32);
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 950;
 }
 
 .detail-download-link {
@@ -462,20 +492,25 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  justify-content: space-between;
   align-self: stretch;
   padding: 12px;
 }
 
 .stat-item {
   display: grid;
-  grid-template-columns: 78px minmax(0, 1fr);
-  gap: 12px;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 8px;
   align-items: center;
-  min-height: 72px;
-  padding: 12px 14px;
+  min-height: 66px;
+  padding: 11px 12px;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius);
   background: var(--surface-soft);
+}
+
+.stat-item--size {
+  margin-top: 0;
 }
 
 .stat-item:first-child {
@@ -484,29 +519,42 @@ textarea {
 }
 
 .stat-item span {
-  color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  width: max-content;
+  min-height: 28px;
+  padding: 4px 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: rgba(236, 203, 102, 0.32);
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 950;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 .stat-item:first-child span {
-  color: rgba(255, 255, 255, 0.72);
+  border-color: rgba(255, 255, 255, 0.26);
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .stat-item strong {
   display: -webkit-box;
   overflow: hidden;
   color: var(--text);
-  font-size: 1rem;
-  line-height: 1.25;
+  font-size: 1.08rem;
+  line-height: 1.36;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
 
 .stat-item:first-child strong {
   color: var(--warning);
-  font-size: 1.45rem;
-  line-height: 1.05;
+  font-size: 1.16rem;
+  line-height: 1.36;
 }
 
 .category-filter-panel {
@@ -630,9 +678,24 @@ textarea {
   flex-direction: column;
   min-height: 404px;
   overflow: hidden;
+  cursor: pointer;
   transition:
+    border-color 160ms ease,
     transform 160ms ease,
     box-shadow 160ms ease;
+}
+
+.game-card:focus-visible {
+  outline: 3px solid rgba(93, 127, 106, 0.3);
+  outline-offset: 4px;
+}
+
+.game-card.is-spotlight {
+  border-color: var(--primary-strong);
+  background:
+    linear-gradient(180deg, rgba(191, 216, 198, 0.34), transparent 42%),
+    var(--surface);
+  box-shadow: var(--shadow-ink);
 }
 
 .game-card img {
@@ -680,28 +743,42 @@ textarea {
 
 .game-card-facts {
   display: grid;
-  gap: 6px;
+  gap: 8px;
 }
 
 .game-card-facts div {
-  display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
+  display: flex;
   gap: 8px;
-  align-items: start;
-  min-height: 24px;
+  align-items: center;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface-soft);
 }
 
 .game-card-facts span {
-  color: var(--muted);
-  font-size: 0.82rem;
-  font-weight: 850;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  min-height: 26px;
+  padding: 3px 8px;
+  border: 1px solid rgba(181, 165, 81, 0.36);
+  border-radius: 8px;
+  background: rgba(236, 203, 102, 0.22);
+  color: var(--text);
+  font-size: 0.76rem;
+  font-weight: 900;
+  line-height: 1;
 }
 
 .game-card-facts strong {
   color: var(--text);
-  font-size: 0.88rem;
-  font-weight: 850;
-  line-height: 1.5;
+  font-size: 0.84rem;
+  font-weight: 900;
+  line-height: 1.38;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .tag-list {
@@ -817,10 +894,29 @@ textarea {
 }
 
 .detail-copy {
-  display: grid;
-  align-content: start;
-  gap: 18px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
   padding: 26px;
+}
+
+.detail-main-content {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+  min-height: 0;
+  padding: 16px 0 18px;
+}
+
+.detail-download-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-self: stretch;
+  min-width: 0;
 }
 
 .eyebrow {
@@ -829,15 +925,73 @@ textarea {
   font-weight: 950;
 }
 
+.detail-info-section {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: rgba(238, 243, 232, 0.76);
+}
+
+.detail-info-label {
+  display: inline-flex;
+  align-items: center;
+  width: max-content;
+  min-height: 28px;
+  padding: 4px 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: rgba(236, 203, 102, 0.32);
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 950;
+}
+
+.detail-description {
+  display: -webkit-box;
+  max-width: 860px;
+  overflow: hidden;
+  color: #4f584d;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.72;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 6;
+}
+
+.detail-type-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.detail-type-list span {
+  min-height: 30px;
+  padding: 6px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--primary-strong);
+  font-size: 0.86rem;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
 .detail-stat-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px;
 }
 
 .detail-stat {
   display: grid;
-  gap: 4px;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
   padding: 12px;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius);
@@ -845,13 +999,22 @@ textarea {
 }
 
 .detail-stat span {
-  color: var(--muted);
-  font-size: 0.8rem;
-  font-weight: 850;
+  display: inline-flex;
+  align-items: center;
+  width: max-content;
+  min-height: 26px;
+  padding: 3px 8px;
+  border-radius: var(--radius);
+  background: rgba(236, 203, 102, 0.28);
+  color: var(--text);
+  font-size: 0.86rem;
+  font-weight: 950;
 }
 
 .detail-stat strong {
   color: var(--text);
+  font-size: 0.96rem;
+  line-height: 1.4;
   overflow-wrap: anywhere;
 }
 
@@ -916,13 +1079,6 @@ textarea {
   line-height: 1.35;
 }
 
-.related-platform {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.9rem;
-  font-weight: 850;
-}
-
 .panel {
   padding: 18px;
 }
@@ -969,7 +1125,10 @@ textarea {
     min-height: 360px;
   }
 
-  .hero-body h1,
+  .hero-body h1 {
+    font-size: 2.75rem;
+  }
+
   .detail-copy h1 {
     font-size: 3.2rem;
   }
@@ -1079,10 +1238,20 @@ textarea {
     grid-template-columns: 1fr;
   }
 
-  .hero-body h1,
+  .hero-body h1 {
+    font-size: 2rem;
+    line-height: 1.06;
+  }
+
   .detail-copy h1 {
     font-size: 2rem;
     line-height: 1.06;
+  }
+
+  .hero-summary {
+    font-size: 0.94rem;
+    line-height: 1.58;
+    -webkit-line-clamp: 3;
   }
 
   .stat-strip {
@@ -1091,12 +1260,14 @@ textarea {
   }
 
   .stat-item {
-    min-height: 74px;
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: 8px;
+    min-height: 66px;
     padding: 10px;
   }
 
   .stat-item:first-child strong {
-    font-size: 2.25rem;
+    font-size: 1.16rem;
   }
 
   .category-filter-panel {
@@ -1150,11 +1321,12 @@ textarea {
   }
 
   .game-card-facts {
-    gap: 4px;
+    gap: 6px;
   }
 
   .game-card-facts div {
-    grid-template-columns: 38px minmax(0, 1fr);
+    min-height: 38px;
+    padding: 7px 9px;
   }
 
   .tag-list span {
@@ -1240,11 +1412,27 @@ textarea {
     padding: 16px;
   }
 
+  .detail-main-content {
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 0;
+  }
+
   .download-address {
+    grid-template-columns: 1fr;
+    gap: 8px;
     padding: 12px;
   }
 
+  .detail-info-section {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 10px;
+  }
+
   .detail-stat {
+    grid-template-columns: 1fr;
+    gap: 8px;
     padding: 10px;
   }
 

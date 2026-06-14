@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, unquote, urlparse
 
-from app.config import DATABASE_PATH, DEFAULT_HOST, DEFAULT_PORT, FRONTEND_DIR
+from app.config import DATABASE_PATH, DEFAULT_HOST, DEFAULT_PORT, FRONTEND_DIR, PIC_DIR
 from app.database import initialize_database
 from app.repositories import (
     get_game,
@@ -26,6 +26,7 @@ class GameHubRequestHandler(BaseHTTPRequestHandler):
 
     database_path: Path = DATABASE_PATH
     frontend_dir: Path = FRONTEND_DIR
+    pic_dir: Path = PIC_DIR
 
     def do_OPTIONS(self) -> None:
         """返回 CORS 预检请求响应头。"""
@@ -39,6 +40,10 @@ class GameHubRequestHandler(BaseHTTPRequestHandler):
 
         if route == "/":
             self._send_frontend_file("/preview.html")
+            return
+
+        if route.startswith("/pic/"):
+            self._send_pic_file(route)
             return
 
         if not route.startswith("/api/"):
@@ -155,6 +160,24 @@ class GameHubRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(content)
 
+    def _send_pic_file(self, route: str) -> None:
+        requested_path = unquote(route.removeprefix("/pic/"))
+        static_path = (self.pic_dir / requested_path).resolve()
+        pic_root = self.pic_dir.resolve()
+        if not static_path.is_file() or not static_path.is_relative_to(pic_root):
+            self._send_error("Image not found", HTTPStatus.NOT_FOUND)
+            return
+
+        content = static_path.read_bytes()
+        content_type = mimetypes.guess_type(static_path.name)[0] or "application/octet-stream"
+
+        self.send_response(HTTPStatus.OK.value)
+        self._send_common_headers()
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(content)))
+        self.end_headers()
+        self.wfile.write(content)
+
 
 def run_server(
     host: str = DEFAULT_HOST,
@@ -165,6 +188,7 @@ def run_server(
     initialize_database(database_path)
     GameHubRequestHandler.database_path = database_path
     GameHubRequestHandler.frontend_dir = FRONTEND_DIR
+    GameHubRequestHandler.pic_dir = PIC_DIR
     server = ThreadingHTTPServer((host, port), GameHubRequestHandler)
     print(f"空空如也GameHub site running at http://{host}:{port}/")
     print(f"空空如也GameHub API running at http://{host}:{port}/api")

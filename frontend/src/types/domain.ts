@@ -17,6 +17,7 @@ export interface GameSummary {
   cover_url: string;
   download_url: string;
   summary: string;
+  size: string;
   platforms: string[];
   tags: string[];
   category_name: string;

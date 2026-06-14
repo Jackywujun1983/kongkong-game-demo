@@ -11,50 +11,64 @@ echo Current repository:
 git remote -v
 if errorlevel 1 goto fail
 
+set "PYTHON_EXE=%USERPROFILE%\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe"
+if not exist "%PYTHON_EXE%" set "PYTHON_EXE="
+if not defined PYTHON_EXE (
+  where python >nul 2>nul
+  if not errorlevel 1 set "PYTHON_EXE=python"
+)
+if not defined PYTHON_EXE (
+  where py >nul 2>nul
+  if not errorlevel 1 set "PYTHON_EXE=py"
+)
+if not defined PYTHON_EXE (
+  echo Python runtime was not found. Please install Python or run this from Codex workspace.
+  goto fail
+)
+
 echo.
-echo Staging confirmed UI files...
-git add -- .gitignore ^
+echo Exporting static game data...
+"%PYTHON_EXE%" tools\export_static_game_data.py
+if errorlevel 1 goto fail
+
+echo.
+echo Staging tracked project changes...
+git add -u -- .
+if errorlevel 1 goto fail
+
+echo.
+echo Staging static deployment files...
+git add -- .github/workflows/github-pages.yml ^
+  .gitignore ^
+  publish_static_site.cmd ^
   publish_site.cmd ^
-  docs/*.md ^
+  README.md ^
+  backend/README.md ^
+  backend/gamehub.sqlite3 ^
+  docs ^
+  frontend/README.md ^
+  frontend/index.html ^
   frontend/detail.html ^
   frontend/preview.html ^
   frontend/public/assets/covers/default-game-cover.jpg ^
   frontend/public/assets/covers/default-game-cover.png ^
+  frontend/public/game-data.js ^
   frontend/public/site.css ^
   frontend/src/App.tsx ^
-  frontend/src/features/games/GameCard.tsx ^
+  frontend/src/features/games/*.tsx ^
   frontend/src/styles/global.css ^
+  frontend/src/types/domain.ts ^
+  tools/export_static_game_data.py ^
+  tools/import_fufu_quark_games.py ^
   tools/publish_ui_update.cmd
 if errorlevel 1 goto fail
 
 echo.
 echo Staged files:
-git diff --cached --name-only -- .gitignore ^
-  publish_site.cmd ^
-  docs/*.md ^
-  frontend/detail.html ^
-  frontend/preview.html ^
-  frontend/public/assets/covers/default-game-cover.jpg ^
-  frontend/public/assets/covers/default-game-cover.png ^
-  frontend/public/site.css ^
-  frontend/src/App.tsx ^
-  frontend/src/features/games/GameCard.tsx ^
-  frontend/src/styles/global.css ^
-  tools/publish_ui_update.cmd
+git diff --cached --name-only
 if errorlevel 1 goto fail
 
-git diff --cached --quiet -- .gitignore ^
-  publish_site.cmd ^
-  docs/*.md ^
-  frontend/detail.html ^
-  frontend/preview.html ^
-  frontend/public/assets/covers/default-game-cover.jpg ^
-  frontend/public/assets/covers/default-game-cover.png ^
-  frontend/public/site.css ^
-  frontend/src/App.tsx ^
-  frontend/src/features/games/GameCard.tsx ^
-  frontend/src/styles/global.css ^
-  tools/publish_ui_update.cmd
+git diff --cached --quiet
 set "DIFF_STATUS=%ERRORLEVEL%"
 if "%DIFF_STATUS%"=="0" (
   echo.
@@ -62,18 +76,7 @@ if "%DIFF_STATUS%"=="0" (
 ) else if "%DIFF_STATUS%"=="1" (
   echo.
   echo Creating commit: %COMMIT_MESSAGE%
-  git commit -m "%COMMIT_MESSAGE%" -- .gitignore ^
-    publish_site.cmd ^
-    docs/*.md ^
-    frontend/detail.html ^
-    frontend/preview.html ^
-    frontend/public/assets/covers/default-game-cover.jpg ^
-    frontend/public/assets/covers/default-game-cover.png ^
-    frontend/public/site.css ^
-    frontend/src/App.tsx ^
-    frontend/src/features/games/GameCard.tsx ^
-    frontend/src/styles/global.css ^
-    tools/publish_ui_update.cmd
+  git commit -m "%COMMIT_MESSAGE%"
   if errorlevel 1 goto fail
 ) else (
   goto fail

@@ -40,6 +40,8 @@ class BackendRepositoryTests(unittest.TestCase):
 
         self.assertGreaterEqual(result["total"], 1)
         self.assertEqual(result["items"][0]["slug"], "test-star-map-frontier")
+        self.assertEqual(result["items"][0]["size"], "12 GB")
+        self.assertNotIn("details", result["items"][0])
 
     def test_game_detail_includes_category_and_tags(self) -> None:
         self._insert_game(
@@ -58,6 +60,7 @@ class BackendRepositoryTests(unittest.TestCase):
         self.assertIn("download_url", game)
         self.assertTrue(game["download_url"].endswith("/test-paper-moon"))
         self.assertIn("解谜", game["tags"])
+        self.assertEqual(game["size"], "12 GB")
 
     def test_category_filter_matches_any_linked_category(self) -> None:
         self._insert_game(
@@ -221,12 +224,13 @@ class BackendRepositoryTests(unittest.TestCase):
                     rating,
                     cover_url,
                     download_url,
+                    size,
                     summary,
                     details,
                     platforms,
                     tags
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     title,
@@ -237,6 +241,7 @@ class BackendRepositoryTests(unittest.TestCase):
                     8.5,
                     "/assets/covers/test.png",
                     f"https://gamehub.example.com/downloads/{slug}",
+                    "12 GB",
                     f"{title} 测试简介",
                     f"{title} 测试详情",
                     json.dumps(["PC"], ensure_ascii=False),

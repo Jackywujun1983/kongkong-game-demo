@@ -19,6 +19,7 @@
 - `docs/需求文档.md`
 - `docs/技术文档.md`
 - `docs/数据库设计文档.md`
+- `docs/前端UI设计规范.md`
 - `docs/前端页面布局文档.md`
 - `docs/游戏类型枚举文档.md`
 - `docs/部署/GitHub Pages静态部署方案.md`
@@ -51,6 +52,16 @@ http://127.0.0.1:8000/
 ```text
 http://127.0.0.1:8000/api/health
 ```
+
+## 发布
+
+发布到 GitHub Pages：
+
+```cmd
+publish_site.cmd
+```
+
+发布后到 GitHub 仓库 `Actions` 查看 `Deploy Static Site to GitHub Pages` 是否变成绿色成功。
 
 ## 测试
 

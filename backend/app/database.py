@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
@@ -83,6 +84,7 @@ def _create_schema(connection: sqlite3.Connection) -> None:
             rating REAL NOT NULL,
             cover_url TEXT NOT NULL,
             download_url TEXT NOT NULL DEFAULT '',
+            size TEXT NOT NULL DEFAULT '',
             summary TEXT NOT NULL,
             details TEXT NOT NULL,
             platforms TEXT NOT NULL,
@@ -144,6 +146,10 @@ def _migrate_schema(connection: sqlite3.Connection) -> None:
             WHERE download_url = ''
             """
         )
+    if "size" not in game_columns:
+        connection.execute("ALTER TABLE games ADD COLUMN size TEXT NOT NULL DEFAULT ''")
+
+    _backfill_game_size(connection)
 
     category_columns = {
         row["name"]
@@ -240,6 +246,45 @@ def _remove_account_and_forum_tables(connection: sqlite3.Connection) -> None:
         """
     )
     connection.execute("DELETE FROM ads WHERE placement = ?", ("forum_feed",))
+
+
+def _backfill_game_size(connection: sqlite3.Connection) -> None:
+    """从旧详情文本中回填 games.size。"""
+    rows = connection.execute(
+        """
+        SELECT id, summary, details
+        FROM games
+        WHERE size = ''
+        """
+    ).fetchall()
+    updates = []
+    for row in rows:
+        size = _extract_game_size(row["details"], row["summary"])
+        if size:
+            updates.append((size, row["id"]))
+    if not updates:
+        return
+
+    connection.executemany(
+        """
+        UPDATE games
+        SET size = ?
+        WHERE id = ? AND size = ''
+        """,
+        updates,
+    )
+
+
+def _extract_game_size(*sources: str) -> str:
+    """从历史文本字段中提取资源大小。"""
+    for source in sources:
+        match = re.search(r"资源大小[:：]\s*([^。，,\n]+)", source or "")
+        if not match:
+            continue
+        size = match.group(1).strip()
+        if size and size not in {"未知", "未知大小", "未标注"}:
+            return size
+    return ""
 
 
 def _seed_data(connection: sqlite3.Connection) -> None:

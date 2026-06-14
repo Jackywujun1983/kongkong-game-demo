@@ -16,7 +16,7 @@ export function GameDetailPanel({ game, onClose }: GameDetailPanelProps) {
   const categoryNames = game?.categories.length
     ? game.categories.map((category) => category.name).join(" / ")
     : game?.category_name || "未分类";
-  const gameSize = game ? extractGameSize(game.summary || game.details) : "";
+  const gameSize = normalizeGameSize(game?.size);
 
   return (
     <AnimatePresence>
@@ -73,10 +73,11 @@ export function GameDetailPanel({ game, onClose }: GameDetailPanelProps) {
   );
 }
 
-function extractGameSize(text: string): string {
-  const matchedSize = text.match(/资源大小：([^。，\n]+)/);
-  const size = matchedSize ? matchedSize[1].trim() : "";
-  return size && size !== "未知" && size !== "未知大小" ? size : "";
+function normalizeGameSize(value = ""): string {
+  const size = value.trim();
+  return size && size !== "未知" && size !== "未知大小" && size !== "未标注"
+    ? size
+    : "";
 }
 
 function useDefaultCover(event: SyntheticEvent<HTMLImageElement>): void {

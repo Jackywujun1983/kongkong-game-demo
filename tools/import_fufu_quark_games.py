@@ -17,7 +17,7 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 BACKEND_DIR = ROOT_DIR / "backend"
 DEFAULT_CSV_PATH = ROOT_DIR / "data" / "fufu_quark_only.csv"
 DEFAULT_COVER_URL = "/public/assets/covers/default-game-cover.jpg"
-DEFAULT_STUDIO = "未知"
+DEFAULT_STUDIO = ""
 DEFAULT_RATING = 0.0
 DEFAULT_PLATFORM = "PC"
 GAME_TYPE_ALIASES: dict[str, str] = {}
@@ -32,13 +32,15 @@ from prune_low_count_game_categories import (  # noqa: E402
 )
 
 
-FIELD_TYPE = "类型"
-FIELD_TITLE = "游戏名称"
+FIELD_TYPE = "root_dir_name"
+FIELD_TITLE = "subfolder"
 FIELD_GAME_TYPE = "游戏类型"
 FIELD_DOWNLOAD_URL = "url_or_filename"
 FIELD_SIZE = "大小"
 FIELD_PUBLISHED_AT = "发布时间"
 FIELD_YEAR = "年份"
+FIELD_DESCRIPTION = "游戏描述"
+FIELD_COVER = "游戏封面"
 
 
 def parse_args() -> argparse.Namespace:
@@ -98,6 +100,8 @@ def read_csv_rows(csv_path: Path) -> list[dict[str, str]]:
         FIELD_SIZE,
         FIELD_PUBLISHED_AT,
         FIELD_YEAR,
+        FIELD_DESCRIPTION,
+        FIELD_COVER,
     }
     missing_fields = required_fields - set(reader.fieldnames or [])
     if missing_fields:
@@ -124,7 +128,6 @@ def ensure_categories(
     )
     for category_name in category_names:
         slug = make_category_slug(category_name)
-        description = f"来自 fufu_quark_only.csv 的游戏类型：{category_name}"
         connection.execute(
             """
             INSERT INTO categories (name, slug, description)
@@ -133,7 +136,7 @@ def ensure_categories(
                 name = excluded.name,
                 description = excluded.description
             """,
-            (category_name, slug, description),
+            (category_name, slug, ""),
         )
 
     category_rows = connection.execute(
@@ -176,6 +179,7 @@ def upsert_games(
                 rating,
                 cover_url,
                 download_url,
+                size,
                 summary,
                 details,
                 platforms,
@@ -190,6 +194,7 @@ def upsert_games(
                 :rating,
                 :cover_url,
                 :download_url,
+                :size,
                 :summary,
                 :details,
                 :platforms,
@@ -203,6 +208,7 @@ def upsert_games(
                 rating = excluded.rating,
                 cover_url = excluded.cover_url,
                 download_url = excluded.download_url,
+                size = excluded.size,
                 summary = excluded.summary,
                 details = excluded.details,
                 platforms = excluded.platforms,
@@ -232,24 +238,18 @@ def build_game_payload(
     title = row[FIELD_TITLE]
     game_types = get_game_type_names(row)
     download_url = row[FIELD_DOWNLOAD_URL]
-    size = row[FIELD_SIZE] or "未知大小"
+    size = normalize_game_size(row[FIELD_SIZE])
+    detail_size = size or "未知大小"
     published_at = row[FIELD_PUBLISHED_AT] or "未知发布时间"
     release_year = parse_release_year(row[FIELD_YEAR], published_at)
+    summary = row[FIELD_DESCRIPTION] or build_default_summary(
+        title=title,
+        resource_category_name=resource_category_name,
+        game_type=row[FIELD_GAME_TYPE],
+        size=detail_size,
+    )
     tags = [*game_types, resource_category_name]
     game_category_ids = [category_ids[category_name] for category_name in game_types]
-
-    summary = (
-        f"{title}，资源分类：{resource_category_name}，"
-        f"游戏类型：{row[FIELD_GAME_TYPE] or '未标注'}，资源大小：{size}。"
-    )
-    details = (
-        f"资源名称：{title}\n"
-        f"资源分类：{resource_category_name}\n"
-        f"游戏类型：{row[FIELD_GAME_TYPE] or '未标注'}\n"
-        f"资源大小：{size}\n"
-        f"发布时间：{published_at}\n"
-        f"下载地址：{download_url}"
-    )
 
     return {
         "title": title,
@@ -259,13 +259,33 @@ def build_game_payload(
         "studio": DEFAULT_STUDIO,
         "release_year": release_year,
         "rating": DEFAULT_RATING,
-        "cover_url": DEFAULT_COVER_URL,
+        "cover_url": row[FIELD_COVER] or DEFAULT_COVER_URL,
         "download_url": download_url,
+        "size": size,
         "summary": summary,
-        "details": details,
+        "details": "",
         "platforms": json.dumps([DEFAULT_PLATFORM], ensure_ascii=False),
         "tags": json.dumps(tags, ensure_ascii=False),
     }
+
+
+def build_default_summary(
+    title: str,
+    resource_category_name: str,
+    game_type: str,
+    size: str,
+) -> str:
+    """根据基础字段构造缺省简介。"""
+    return (
+        f"{title}，资源分类：{resource_category_name}，"
+        f"游戏类型：{game_type or '未标注'}，资源大小：{size}。"
+    )
+
+
+def normalize_game_size(value: str) -> str:
+    """Return a displayable game size from the CSV size column."""
+    size = value.strip()
+    return size if size and size not in {"未知", "未知大小", "未标注"} else ""
 
 
 def sync_game_categories(
